@@ -11,3 +11,4 @@ columns:
   - subj_type
   - obj_type
   - stanford_ner
+random_state: 42
