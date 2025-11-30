@@ -1,0 +1,2 @@
+path: "json"
+data_dir: ${path.data}

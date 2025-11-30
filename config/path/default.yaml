@@ -1,0 +1,2 @@
+root: ${oc.env:PROJECT_ROOT}
+data: ${path.root}/data
