@@ -60,11 +60,12 @@ def preprocess(dataset: DatasetDict, config: DictConfig) -> DatasetDict:
     test sets, and removing extra columns.
 
     Args:
-        dataset: The dataset to be preprocessed.
-        config: The configuration containing specifications for the preprocessing.
+        dataset: The dataset to be preprocessed, containing multiple splits.
+        config: The configuration containing specifications for the
+            preprocessing pipeline.
 
     Returns:
-        The preprocessed dataset, split into train and test sets.
+        The preprocessed dataset, containing the train and test splits.
     """
     collated_documents: list[dict] = collate_documents(dataset)
     train_documents, test_documents = train_test_split(
@@ -75,6 +76,7 @@ def preprocess(dataset: DatasetDict, config: DictConfig) -> DatasetDict:
     for split_name, documents in zip(["train", "test"], [train_documents, test_documents]):
         split_subset: Dataset = Dataset.from_list(documents)
         split_subset = remove_extra_columns(split_subset, config.dataset.columns)
+        split_subset = split_subset.map(lambda x: {"text": " ".join(x["token"])})
         formatted_dataset[split_name] = split_subset
 
     return DatasetDict(formatted_dataset)

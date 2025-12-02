@@ -3,6 +3,7 @@ data/*.json
 outputs/
 .env
 .DS_Store
+chroma
 
 # Python-generated files
 __pycache__/
