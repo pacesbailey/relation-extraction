@@ -1,2 +1,14 @@
 path: "json"
 data_dir: ${path.data}
+columns:
+  - id
+  - relation
+  - token
+  - subj_start
+  - subj_end
+  - obj_start
+  - obj_end
+  - subj_type
+  - obj_type
+  - stanford_ner
+random_state: 42
