@@ -14,6 +14,7 @@ Example:
 >>> preprocessed_dataset: DatasetDict = preprocess(dataset, config)
 """
 
+import pandas as pd
 from datasets import Dataset, DatasetDict
 from omegaconf import DictConfig
 from sklearn.model_selection import train_test_split
@@ -53,6 +54,21 @@ def remove_extra_columns(dataset: Dataset, columns: list[str]) -> Dataset:
 
     return dataset.remove_columns(list(extra_columns))
 
+def remove_duplicates(dataset: Dataset) -> Dataset:
+    """
+    Removes duplicates from a dataset.
+
+    Args:
+        dataset: The dataset to remove duplicates from.
+
+    Returns:
+        The dataset with duplicates removed.
+    """
+    dataframe: pd.DataFrame = pd.DataFrame(dataset)
+    dataframe = dataframe.drop_duplicates(subset=["token"])
+
+    return Dataset.from_pandas(dataframe)
+
 
 def preprocess(dataset: DatasetDict, config: DictConfig) -> DatasetDict:
     """
@@ -68,9 +84,13 @@ def preprocess(dataset: DatasetDict, config: DictConfig) -> DatasetDict:
         The preprocessed dataset, containing the train and test splits.
     """
     collated_documents: list[dict] = collate_documents(dataset)
+    collated_dataset: Dataset = Dataset.from_list(collated_documents)
+    collated_dataset = remove_duplicates(collated_dataset)
+    collated_documents = list(collated_dataset)
     train_documents, test_documents = train_test_split(
         collated_documents,
-        random_state=config.dataset.random_state
+        random_state=config.dataset.random_state,
+        stratify=[doc["relation"] for doc in collated_documents]
     )
     formatted_dataset: dict[str, Dataset] = {}
     for split_name, documents in zip(["train", "test"], [train_documents, test_documents]):

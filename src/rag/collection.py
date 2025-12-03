@@ -20,6 +20,40 @@ from datasets import Dataset, DatasetDict
 from .utils import Combination, map_collection_names
 
 
+def add_documents(
+    collection: chromadb.Collection,
+    dataset: Dataset,
+    relation: str,
+    subj_type: str,
+    obj_type: str,
+    batch_size: int = 5461,
+) -> None:
+    """
+    Adds documents to a collection based on a given relation, subj_type, and 
+    obj_type.
+
+    Args:
+        collection: The collection to add documents to.
+        dataset: The dataset to add documents from.
+        relation: The relation to add documents for.
+        subj_type: The subj_type to add documents for.
+        obj_type: The obj_type to add documents for.
+        batch_size: The number of documents to add in each batch.
+    """
+    filter_func: Callable = (
+        lambda x: x["relation"] == relation and
+        x["subj_type"] == subj_type and
+        x["obj_type"] == obj_type
+    )
+    subset: Dataset = dataset.filter(filter_func)
+    ids: list[int] = list(subset["id"])
+    documents: list[str] = list(subset["text"])
+    for idx in range(0, len(ids), batch_size):
+        batch_ids: list[int] = ids[idx:idx+batch_size]
+        batch_documents: list[str] = documents[idx:idx+batch_size]
+        collection.upsert(ids=batch_ids, documents=batch_documents)
+
+
 def get_collections(
     dataset: DatasetDict,
     client: chromadb.Client,
@@ -39,16 +73,7 @@ def get_collections(
     for combination, collection_name in collection_names.items():
         collection: chromadb.Collection = client.get_or_create_collection(name=collection_name)
         if collection.count() == 0:
-            filter: Callable = (
-                lambda x: x["relation"] == combination[0] and
-                x["subj_type"] == combination[1] and
-                x["obj_type"] == combination[2]
-            )
-            subset: Dataset = dataset["train"].filter(filter)
-            ids: list[int] = list(subset["id"])
-            docs: list[str] = list(subset["text"])
-            for idx in range(0, len(ids), (max := 5461)):
-                collection.add(ids=ids[idx:idx+max], documents=docs[idx:idx+max])
+            add_documents(collection, dataset["train"], *combination)
 
         collections[combination] = collection
 
