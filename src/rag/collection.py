@@ -12,12 +12,12 @@ Example:
 >>> results: dict = collection.query(query_texts=["query text"], n_results=4)
 """
 
-from typing import Callable
+from typing import Any, Callable
 
 import chromadb
 from datasets import Dataset, DatasetDict
 
-from .utils import Combination, map_collection_names
+from .utils import Combination, get_metadata, map_collection_names
 
 
 def add_documents(
@@ -48,10 +48,14 @@ def add_documents(
     subset: Dataset = dataset.filter(filter_func)
     ids: list[int] = list(subset["id"])
     documents: list[str] = list(subset["text"])
+    metadata: list[dict[str, Any]] = [get_metadata(document) for document in subset]
     for idx in range(0, len(ids), batch_size):
-        batch_ids: list[int] = ids[idx:idx+batch_size]
-        batch_documents: list[str] = documents[idx:idx+batch_size]
-        collection.upsert(ids=batch_ids, documents=batch_documents)
+        batch_end: int = idx + batch_size
+        collection.upsert(
+            ids=ids[idx:batch_end],
+            documents=documents[idx:batch_end],
+            metadatas=metadata[idx:batch_end],
+        )
 
 
 def get_collections(
