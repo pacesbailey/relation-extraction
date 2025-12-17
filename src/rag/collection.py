@@ -12,7 +12,7 @@ Example:
 >>> results: dict = collection.query(query_texts=["query text"], n_results=4)
 """
 
-from typing import Any, Callable
+from typing import Any
 
 import chromadb
 from datasets import Dataset, DatasetDict
@@ -29,7 +29,7 @@ def add_documents(
     batch_size: int = 5461,
 ) -> None:
     """
-    Adds documents to a collection based on a given relation, subj_type, and 
+    Adds documents to a collection based on a given relation, subj_type, and
     obj_type.
 
     Args:
@@ -40,12 +40,11 @@ def add_documents(
         obj_type: The obj_type to add documents for.
         batch_size: The number of documents to add in each batch.
     """
-    filter_func: Callable = (
-        lambda x: x["relation"] == relation and
-        x["subj_type"] == subj_type and
-        x["obj_type"] == obj_type
+    subset: Dataset = dataset.filter(
+        lambda x: x["relation"] == relation
+        and x["subj_type"] == subj_type
+        and x["obj_type"] == obj_type
     )
-    subset: Dataset = dataset.filter(filter_func)
     ids: list[int] = list(subset["id"])
     documents: list[str] = list(subset["text"])
     metadata: list[dict[str, Any]] = [get_metadata(document) for document in subset]
@@ -75,7 +74,9 @@ def get_collections(
     collection_names: dict[Combination, str] = map_collection_names(dataset)
     collections: dict[Combination, chromadb.Collection] = {}
     for combination, collection_name in collection_names.items():
-        collection: chromadb.Collection = client.get_or_create_collection(name=collection_name)
+        collection: chromadb.Collection = client.get_or_create_collection(
+            name=collection_name
+        )
         if collection.count() == 0:
             add_documents(collection, dataset["train"], *combination)
 

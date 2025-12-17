@@ -54,6 +54,7 @@ def remove_extra_columns(dataset: Dataset, columns: list[str]) -> Dataset:
 
     return dataset.remove_columns(list(extra_columns))
 
+
 def remove_duplicates(dataset: Dataset) -> Dataset:
     """
     Removes duplicates from a dataset.
@@ -90,10 +91,13 @@ def preprocess(dataset: DatasetDict, config: DictConfig) -> DatasetDict:
     train_documents, test_documents = train_test_split(
         collated_documents,
         random_state=config.dataset.random_state,
-        stratify=[doc["relation"] for doc in collated_documents]
+        stratify=[doc["relation"] for doc in collated_documents],
     )
     formatted_dataset: dict[str, Dataset] = {}
-    for split_name, documents in zip(["train", "test"], [train_documents, test_documents]):
+    for split_name, documents in zip(
+        ["train", "test"],
+        [train_documents, test_documents]
+    ):
         split_subset: Dataset = Dataset.from_list(documents)
         split_subset = remove_extra_columns(split_subset, config.dataset.columns)
         split_subset = split_subset.map(lambda x: {"text": " ".join(x["token"])})

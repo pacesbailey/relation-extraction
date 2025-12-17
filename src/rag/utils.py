@@ -16,7 +16,7 @@ from datasets import DatasetDict, Column
 type Combination = tuple[str, str, str]
 
 
-def clean_string(text: str, replacement: str = '_') -> str:
+def clean_string(text: str, replacement: str = "_") -> str:
     """
     Clean a string by replacing all non-alphanumeric characters with a
     replacement character.
@@ -28,7 +28,7 @@ def clean_string(text: str, replacement: str = '_') -> str:
     Returns:
         The cleaned string.
     """
-    return re.sub(r'[^a-zA-Z0-9]', replacement, text)
+    return re.sub(r"[^a-zA-Z0-9]", replacement, text)
 
 
 def get_metadata(document: dict[str, Any]) -> dict[str, Any]:
@@ -70,7 +70,7 @@ def map_collection_names(dataset: DatasetDict) -> dict[Combination, str]:
     subj_types: Column = dataset["train"]["subj_type"]
     obj_types: Column = dataset["train"]["obj_type"]
     unique_combinations: set[Combination] = set(zip(relations, subj_types, obj_types))
-    
+
     return {
         combination: clean_string("-".join(combination))
         for combination in unique_combinations
