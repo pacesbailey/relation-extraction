@@ -15,7 +15,7 @@ Example:
 from typing import Any
 
 import chromadb
-from datasets import Dataset, DatasetDict
+from datasets import Dataset
 
 from .utils import get_metadata
 
@@ -46,7 +46,7 @@ def add_documents(
         )
 
 
-def get_collection(dataset: DatasetDict, client: chromadb.Client) -> chromadb.Collection:
+def get_collection(dataset: Dataset, client: chromadb.Client) -> chromadb.Collection:
     """
     Create collections for the dataset.
 
@@ -59,7 +59,7 @@ def get_collection(dataset: DatasetDict, client: chromadb.Client) -> chromadb.Co
     """
     collection: chromadb.Collection = client.get_or_create_collection(name="ner")
     if not collection.count():
-        add_documents(collection, dataset["train"])
+        add_documents(collection, dataset)
 
     return collection
 

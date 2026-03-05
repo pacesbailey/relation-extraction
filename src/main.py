@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 import chromadb
 import hydra
@@ -22,9 +23,19 @@ def main(config: DictConfig) -> None:
             extraction task.
     """
     dataset: DatasetDict = load_dataset(config.dataset.path, data_dir=config.dataset.data_dir)
-    preprocessed_dataset: DatasetDict = preprocess(dataset, config.dataset.columns, config.dataset.random_state)
+    dataset = preprocess(dataset, config.dataset.columns, config.dataset.random_state)
     client: chromadb.Client = chromadb.PersistentClient(config.path.chroma)
-    collection: chromadb.Collection = get_collection(preprocessed_dataset, client)
+    collection: chromadb.Collection = get_collection(dataset["train"], client)
+    for document in dataset["test"]:
+        filter: dict = {
+            "$and": [
+                {"relation": document["relation"]},
+                {"subj_type": document["subj_type"]},
+                {"obj_type": document["obj_type"]},
+                {"labeled_text": document["labeled_text"]}
+            ]
+        }
+        examples: list[dict[str, Any]] = collection.query(query_texts=document["text"], where=filter)
 
 
 if __name__ == "__main__":

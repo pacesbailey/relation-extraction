@@ -18,6 +18,8 @@ import pandas as pd
 from datasets import Dataset, DatasetDict
 from sklearn.model_selection import train_test_split
 
+from .conversion import label_document
+
 
 def collate_documents(dataset: DatasetDict) -> Dataset:
     """
@@ -101,6 +103,7 @@ def preprocess(
         "train": Dataset.from_list(train_documents),
         "test": Dataset.from_list(test_documents)
     }
+    formatted_dataset["train"] = formatted_dataset["train"].map(label_document)
 
     return DatasetDict(formatted_dataset)
 

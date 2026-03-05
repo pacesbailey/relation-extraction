@@ -1,3 +1,4 @@
 defaults:
-  - path: default
   - dataset: default
+  - path: default
+  - prompt: default

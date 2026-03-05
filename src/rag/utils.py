@@ -43,7 +43,21 @@ def get_metadata(document: dict[str, Any]) -> dict[str, Any]:
         "relation": document_copy["relation"],
         "subj_type": document_copy["subj_type"],
         "obj_type": document_copy["obj_type"],
+        "labeled_text": document_copy["labeled_text"],
     }
+
+
+def label_document(document: dict[str, Any]) -> dict[str, Any]:
+    """
+    Label a document.
+
+    Args:
+        document: The document to label.
+
+    Returns:
+        The labeled document.
+    """
+    return document
 
 
 if __name__ == "__main__":
