@@ -16,11 +16,10 @@ Example:
 
 import pandas as pd
 from datasets import Dataset, DatasetDict
-from omegaconf import DictConfig
 from sklearn.model_selection import train_test_split
 
 
-def collate_documents(dataset: DatasetDict) -> list[dict]:
+def collate_documents(dataset: DatasetDict) -> Dataset:
     """
     Collates documents from multiple splits of a dataset into a single list.
 
@@ -28,14 +27,14 @@ def collate_documents(dataset: DatasetDict) -> list[dict]:
         dataset: A DatasetDict containing the dataset splits to collate.
 
     Returns:
-        A list of documents.
+        A Dataset containing the collated documents.
     """
-    collated_documents: list[dict] = []
-    for dataset_split in dataset.values():
-        for document in dataset_split:
-            collated_documents.append(document)
-
-    return collated_documents
+    documents: list[dict] = [
+        document for split in dataset.values()
+        for document in split.to_list()
+    ]
+    
+    return Dataset.from_list(documents)
 
 
 def remove_extra_columns(dataset: Dataset, columns: list[str]) -> Dataset:
@@ -71,37 +70,37 @@ def remove_duplicates(dataset: Dataset) -> Dataset:
     return Dataset.from_pandas(dataframe)
 
 
-def preprocess(dataset: DatasetDict, config: DictConfig) -> DatasetDict:
+def preprocess(
+    dataset: DatasetDict,
+    column_names: list[str],
+    random_state: int,
+) -> DatasetDict:
     """
     Preprocesses a dataset by collating documents, splitting into train and
     test sets, and removing extra columns.
 
     Args:
         dataset: The dataset to be preprocessed, containing multiple splits.
-        config: The configuration containing specifications for the
-            preprocessing pipeline.
+        column_names: The columns to keep in the dataset.
+        random_state: The random state to use for the train-test split.
 
     Returns:
         The preprocessed dataset, containing the train and test splits.
     """
-    collated_documents: list[dict] = collate_documents(dataset)
-    collated_dataset: Dataset = Dataset.from_list(collated_documents)
-    collated_dataset = remove_duplicates(collated_dataset)
-    collated_documents = list(collated_dataset)
+    collated_dataset: Dataset = collate_documents(dataset)
+    unique_dataset: Dataset = remove_duplicates(collated_dataset)
+    trimmed_dataset: Dataset = remove_extra_columns(unique_dataset, column_names)
+    text_dataset: Dataset = trimmed_dataset.map(lambda x: {"text": " ".join(x["token"])})
+    formatted_documents: list[dict] = text_dataset.to_list()
     train_documents, test_documents = train_test_split(
-        collated_documents,
-        random_state=config.dataset.random_state,
-        stratify=[doc["relation"] for doc in collated_documents],
+        formatted_documents,
+        random_state=random_state,
+        stratify=[doc["relation"] for doc in formatted_documents],
     )
-    formatted_dataset: dict[str, Dataset] = {}
-    for split_name, documents in zip(
-        ["train", "test"],
-        [train_documents, test_documents]
-    ):
-        split_subset: Dataset = Dataset.from_list(documents)
-        split_subset = remove_extra_columns(split_subset, config.dataset.columns)
-        split_subset = split_subset.map(lambda x: {"text": " ".join(x["token"])})
-        formatted_dataset[split_name] = split_subset
+    formatted_dataset: dict[str, Dataset] = {
+        "train": Dataset.from_list(train_documents),
+        "test": Dataset.from_list(test_documents)
+    }
 
     return DatasetDict(formatted_dataset)
 

@@ -17,15 +17,12 @@ from typing import Any
 import chromadb
 from datasets import Dataset, DatasetDict
 
-from .utils import Combination, get_metadata, map_collection_names
+from .utils import get_metadata
 
 
 def add_documents(
     collection: chromadb.Collection,
     dataset: Dataset,
-    relation: str,
-    subj_type: str,
-    obj_type: str,
     batch_size: int = 5461,
 ) -> None:
     """
@@ -35,19 +32,11 @@ def add_documents(
     Args:
         collection: The collection to add documents to.
         dataset: The dataset to add documents from.
-        relation: The relation to add documents for.
-        subj_type: The subj_type to add documents for.
-        obj_type: The obj_type to add documents for.
         batch_size: The number of documents to add in each batch.
     """
-    subset: Dataset = dataset.filter(
-        lambda x: x["relation"] == relation
-        and x["subj_type"] == subj_type
-        and x["obj_type"] == obj_type
-    )
-    ids: list[int] = list(subset["id"])
-    documents: list[str] = list(subset["text"])
-    metadata: list[dict[str, Any]] = [get_metadata(document) for document in subset]
+    ids: list[int] = list(dataset["id"])
+    documents: list[str] = list(dataset["text"])
+    metadata: list[dict[str, Any]] = [get_metadata(document) for document in dataset]
     for idx in range(0, len(ids), batch_size):
         batch_end: int = idx + batch_size
         collection.upsert(
@@ -57,10 +46,7 @@ def add_documents(
         )
 
 
-def get_collections(
-    dataset: DatasetDict,
-    client: chromadb.Client,
-) -> dict[Combination, chromadb.Collection]:
+def get_collection(dataset: DatasetDict, client: chromadb.Client) -> chromadb.Collection:
     """
     Create collections for the dataset.
 
@@ -69,20 +55,13 @@ def get_collections(
         client: The chroma client to use.
 
     Returns:
-        A dictionary containing the collections by combination.
+        The collection for the dataset.
     """
-    collection_names: dict[Combination, str] = map_collection_names(dataset)
-    collections: dict[Combination, chromadb.Collection] = {}
-    for combination, collection_name in collection_names.items():
-        collection: chromadb.Collection = client.get_or_create_collection(
-            name=collection_name
-        )
-        if collection.count() == 0:
-            add_documents(collection, dataset["train"], *combination)
+    collection: chromadb.Collection = client.get_or_create_collection(name="ner")
+    if not collection.count():
+        add_documents(collection, dataset["train"])
 
-        collections[combination] = collection
-
-    return collections
+    return collection
 
 
 if __name__ == "__main__":
