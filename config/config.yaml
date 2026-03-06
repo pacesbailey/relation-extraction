@@ -1,4 +1,5 @@
 defaults:
   - dataset: default
+  - model: default
   - path: default
   - prompt: default

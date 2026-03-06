@@ -92,20 +92,20 @@ def preprocess(
     collated_dataset: Dataset = collate_documents(dataset)
     unique_dataset: Dataset = remove_duplicates(collated_dataset)
     trimmed_dataset: Dataset = remove_extra_columns(unique_dataset, column_names)
-    text_dataset: Dataset = trimmed_dataset.map(lambda x: {"text": " ".join(x["token"])})
-    formatted_documents: list[dict] = text_dataset.to_list()
-    train_documents, test_documents = train_test_split(
-        formatted_documents,
-        random_state=random_state,
-        stratify=[doc["relation"] for doc in formatted_documents],
+    text_dataset: Dataset = trimmed_dataset.map(
+        function=lambda x: {"text": " ".join(x["token"])},
+        desc="Joining tokens"
     )
-    formatted_dataset: dict[str, Dataset] = {
-        "train": Dataset.from_list(train_documents),
-        "test": Dataset.from_list(test_documents)
-    }
-    formatted_dataset["train"] = formatted_dataset["train"].map(label_document)
+    train_documents, test_documents = train_test_split(
+        text_dataset.to_list(),
+        random_state=random_state,
+        stratify=list(text_dataset["relation"]),
+    )
+    train_dataset: Dataset = Dataset.from_list(train_documents)
+    test_dataset: Dataset = Dataset.from_list(test_documents)
+    train_dataset = train_dataset.map(label_document, desc="Labeling documents")
 
-    return DatasetDict(formatted_dataset)
+    return DatasetDict({"train": train_dataset, "test": test_dataset})
 
 
 if __name__ == "__main__":

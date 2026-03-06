@@ -1,13 +1,14 @@
 from pathlib import Path
-from typing import Any
 
-import chromadb
 import hydra
+from chromadb import Client, Collection, PersistentClient, QueryResult
 from datasets import load_dataset, DatasetDict
 from omegaconf import DictConfig
 from pyrootutils import setup_root
 
+import dspy
 from dataset import preprocess
+from llm import RelationExtractor, configure_prompt
 from rag import get_collection
 
 
@@ -24,18 +25,26 @@ def main(config: DictConfig) -> None:
     """
     dataset: DatasetDict = load_dataset(config.dataset.path, data_dir=config.dataset.data_dir)
     dataset = preprocess(dataset, config.dataset.columns, config.dataset.random_state)
-    client: chromadb.Client = chromadb.PersistentClient(config.path.chroma)
-    collection: chromadb.Collection = get_collection(dataset["train"], client)
+    client: Client = PersistentClient(config.path.chroma)
+    collection: Collection = get_collection(dataset["train"], client)
+    lm: dspy.LM = dspy.LM(**config.model)
+    dspy.configure(lm=lm)
     for document in dataset["test"]:
         filter: dict = {
             "$and": [
                 {"relation": document["relation"]},
                 {"subj_type": document["subj_type"]},
-                {"obj_type": document["obj_type"]},
-                {"labeled_text": document["labeled_text"]}
+                {"obj_type": document["obj_type"]}
             ]
         }
-        examples: list[dict[str, Any]] = collection.query(query_texts=document["text"], where=filter)
+        examples: QueryResult = collection.query(query_texts=document["text"], n_results=2, where=filter)
+        prompt: str = configure_prompt(config, examples, document)
+        extractor: RelationExtractor = RelationExtractor(prompt)
+        labeled_text: str = extractor(document["text"])
+        print(f"{prompt=}")
+        print(f"{document['text']=}")
+        print(f"{labeled_text=}")
+        exit()
 
 
 if __name__ == "__main__":
