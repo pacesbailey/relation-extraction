@@ -7,7 +7,7 @@ from omegaconf import DictConfig
 from pyrootutils import setup_root
 
 import dspy
-from dataset import preprocess
+from dataset import parse_labeled, preprocess
 from llm import RelationExtractor, configure_prompt
 from rag import get_collection
 
@@ -41,9 +41,11 @@ def main(config: DictConfig) -> None:
         prompt: str = configure_prompt(config, examples, document)
         extractor: RelationExtractor = RelationExtractor(prompt)
         labeled_text: str = extractor(document["text"])
+        entities: list[dict] = parse_labeled(labeled_text)
         print(f"{prompt=}")
-        print(f"{document['text']=}")
         print(f"{labeled_text=}")
+        print(f"{entities=}")
+        print(f"{document=}")
         exit()
 
 
