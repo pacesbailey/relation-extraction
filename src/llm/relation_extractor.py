@@ -1,6 +1,5 @@
-from typing import Any
-
 import dspy
+from chromadb import QueryResult
 from omegaconf import DictConfig
 
 
@@ -34,7 +33,7 @@ class RelationExtractor(dspy.Module):
         return self.extractor(input_text=input_text).output_text
 
 
-def configure_prompt(config: DictConfig, examples: dict, document: dict) -> str:
+def configure_prompt(config: DictConfig, examples: QueryResult, document: dict) -> str:
     """
     Configure the prompt for the relation extractor.
 
@@ -53,11 +52,10 @@ def configure_prompt(config: DictConfig, examples: dict, document: dict) -> str:
         description=config.dataset.label_types[document["relation"]]["description"],
     )
     prompt: str = f"{config.prompt.system} {task}"
-    for input, output in zip(examples["documents"][0], examples["metadatas"][0]):
-        prompt += config.prompt.example.format(input=input, output=output["labeled_text"])
+    for metadata in examples["metadatas"][0]:
+        prompt += config.prompt.example.format(input=metadata["input"], output=metadata["output"])
 
-    return prompt + config.prompt.user.format(input=document["text"])
-
+    return prompt + config.prompt.user.format(input=document["input"])
 
 
 if __name__ == "__main__":

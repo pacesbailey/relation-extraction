@@ -1,18 +1,18 @@
 from pathlib import Path
 
+import dspy
 import hydra
-from chromadb import Client, Collection, PersistentClient, QueryResult
-from datasets import load_dataset, DatasetDict
+from chromadb import Client, Collection, PersistentClient
+from datasets import Dataset, DatasetDict, load_dataset
 from omegaconf import DictConfig
 from pyrootutils import setup_root
 
-import dspy
-from dataset import parse_labeled, preprocess
-from llm import RelationExtractor, configure_prompt
+from dataset import preprocess
+from llm import prompt_model
 from rag import get_collection
 
 
-root: Path = setup_root(search_from=str(__file__), pythonpath=True)
+root: Path = setup_root(__file__)
 
 
 @hydra.main(config_path=str(root / "config"), config_name="config", version_base=None)
@@ -23,30 +23,17 @@ def main(config: DictConfig) -> None:
         config: The configuration containing specifications for the relation
             extraction task.
     """
+    # Loads, preprocesses, and creates collections for the dataset
     dataset: DatasetDict = load_dataset(config.dataset.path, data_dir=config.dataset.data_dir)
-    dataset = preprocess(dataset, config.dataset.columns, config.dataset.random_state)
+    dataset = preprocess(dataset, config.prompt.format, config.dataset)
     client: Client = PersistentClient(config.path.chroma)
     collection: Collection = get_collection(dataset["train"], client)
+    
+    # Loads, configures, and prompts the model
     lm: dspy.LM = dspy.LM(**config.model)
     dspy.configure(lm=lm)
-    for document in dataset["test"]:
-        filter: dict = {
-            "$and": [
-                {"relation": document["relation"]},
-                {"subj_type": document["subj_type"]},
-                {"obj_type": document["obj_type"]}
-            ]
-        }
-        examples: QueryResult = collection.query(query_texts=document["text"], n_results=2, where=filter)
-        prompt: str = configure_prompt(config, examples, document)
-        extractor: RelationExtractor = RelationExtractor(prompt)
-        labeled_text: str = extractor(document["text"])
-        entities: list[dict] = parse_labeled(labeled_text)
-        print(f"{prompt=}")
-        print(f"{labeled_text=}")
-        print(f"{entities=}")
-        print(f"{document=}")
-        exit()
+    predictions: Dataset = dataset["test"].map(lambda document: prompt_model(config, document, collection))
+    predictions.to_json(config.path.predictions / "predictions.json")
 
 
 if __name__ == "__main__":

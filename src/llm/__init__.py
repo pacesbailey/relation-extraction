@@ -1,3 +1,3 @@
-from .relation_extractor import RelationExtractor, configure_prompt
+from .prompt import prompt_model
 
-__all__ = ["RelationExtractor", "configure_prompt"]
+__all__ = ["prompt_model"]

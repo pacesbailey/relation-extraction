@@ -1,21 +1,6 @@
-"""Preprocessing module for the tacred dataset.
-
-This module contains functions for preprocessing the tacred dataset in
-preparation for the relation extraction task. The preprocessing pipeline
-includes the following steps:
-1. Collating documents from multiple splits of the dataset into a single list.
-2. Removing extra columns from the collated documents.
-3. Splitting the collated documents into train and test sets.
-4. Formatting the train and test sets into Dataset objects.
-5. Returning the preprocessed dataset as a DatasetDict.
-
-Example:
->>> dataset: DatasetDict = load_dataset("json", data_dir="data")
->>> preprocessed_dataset: DatasetDict = preprocess(dataset, config)
-"""
-
 import pandas as pd
 from datasets import Dataset, DatasetDict
+from omegaconf import DictConfig
 from sklearn.model_selection import train_test_split
 
 from .conversion import label_document
@@ -74,8 +59,8 @@ def remove_duplicates(dataset: Dataset) -> Dataset:
 
 def preprocess(
     dataset: DatasetDict,
-    column_names: list[str],
-    random_state: int,
+    format: DictConfig,
+    dataset_config: DictConfig,
 ) -> DatasetDict:
     """
     Preprocesses a dataset by collating documents, splitting into train and
@@ -85,27 +70,31 @@ def preprocess(
         dataset: The dataset to be preprocessed, containing multiple splits.
         column_names: The columns to keep in the dataset.
         random_state: The random state to use for the train-test split.
+        format: The format to use for the labeled text.
 
     Returns:
         The preprocessed dataset, containing the train and test splits.
     """
     collated_dataset: Dataset = collate_documents(dataset)
     unique_dataset: Dataset = remove_duplicates(collated_dataset)
-    trimmed_dataset: Dataset = remove_extra_columns(unique_dataset, column_names)
+    trimmed_dataset: Dataset = remove_extra_columns(unique_dataset, dataset_config.columns)
     text_dataset: Dataset = trimmed_dataset.map(
         function=lambda x: {"text": " ".join(x["token"])},
         desc="Joining tokens"
     )
     train_documents, test_documents = train_test_split(
         text_dataset.to_list(),
-        random_state=random_state,
+        random_state=dataset_config.random_state,
         stratify=list(text_dataset["relation"]),
     )
     train_dataset: Dataset = Dataset.from_list(train_documents)
     test_dataset: Dataset = Dataset.from_list(test_documents)
-    train_dataset = train_dataset.map(label_document, desc="Labeling documents")
+    datasets: dict[str, Dataset] = {
+        "train": train_dataset.map(label_document, fn_kwargs={"format": format}, desc="Labeling documents"),
+        "test": test_dataset.map(label_document, fn_kwargs={"format": format}, desc="Labeling documents")
+    }
 
-    return DatasetDict({"train": train_dataset, "test": test_dataset})
+    return DatasetDict(datasets)
 
 
 if __name__ == "__main__":

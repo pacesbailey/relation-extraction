@@ -3,7 +3,7 @@ task: "Within the ${dataset.name} dataset, the task is to label relations of typ
 example: "The given sentence: {input}\\nThe labeled sentence: {output}\\n"
 user: "The given sentence: {input}\\nThe labeled sentence: "
 
-entity_formatter:
+formats:
   no_markup: "{entity}"
   html_tag: "<{tag}>{entity}</{tag}>"
   html_tag_relation: "<{tag} relation='{relation}'>{entity}</{tag}>"
@@ -12,7 +12,7 @@ entity_formatter:
   html_tag_ner_role_relation: "<{tag} ner='{ner}' role='{role}' relation='{relation}'>{entity}</{tag}>"
   html_tag_ner_merged_role_relation: "<{tag} ner='{ner}' relation='{relation}:{role}'>{entity}</{tag}>"
 
-entity_format:
+format:
   name: "ner-ner_relation"
-  input: ${prompts.entity_formatter.html_tag_ner}
-  output: ${prompts.entity_formatter.html_tag_ner_relation}
+  input: ${prompt.formats.html_tag_ner}
+  output: ${prompt.formats.html_tag_ner_relation}
