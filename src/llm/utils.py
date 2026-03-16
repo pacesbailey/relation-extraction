@@ -7,8 +7,8 @@ TAG_PATTERN: str = r'(</?(?:HEAD|TAIL)(?:\s+ner="([^"]*)")?(?:\s+relation="([^"]
 
 
 class Tags(StrEnum):
-    HEAD: str = "HEAD"
-    TAIL: str = "TAIL"
+    HEAD = "HEAD"
+    TAIL = "TAIL"
 
 
 def add_token_spans(text: str, entities: list[dict]) -> list[dict]:
@@ -76,11 +76,15 @@ def extract_xml_data(text: str) -> list[dict]:
     entities: list[dict] = []
     for element in root.iter():
         if element.tag in {Tags.HEAD, Tags.TAIL}:
+            try:
+                entity_text: str = element.text.strip()
+            except AttributeError:
+                entity_text = ""
             entity: dict = {
                 "tag": element.tag,
                 "relation": element.attrib.get("relation"),
                 "ner": element.attrib.get("ner"),
-                "text": element.text.strip(),
+                "text": entity_text,
                 "start_token": None,
                 "end_token": None,
             }
@@ -121,7 +125,7 @@ def format_entities(entities: list[dict]) -> dict:
     return output
 
 
-def parse_labeled(text: str) -> list[dict]:
+def parse_labeled(text: str) -> dict:
     """Parses the labeled text and returns the entities.
     
     Args:

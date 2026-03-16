@@ -3,7 +3,7 @@ from pathlib import Path
 
 import dspy
 import hydra
-from chromadb import Client, Collection, PersistentClient
+from chromadb import ClientAPI, Collection, PersistentClient
 from datasets import Dataset, DatasetDict, load_dataset
 from omegaconf import DictConfig
 from pyrootutils import setup_root
@@ -29,7 +29,7 @@ def main(config: DictConfig) -> None:
     dataset: DatasetDict = load_dataset(config.dataset.path, data_dir=config.dataset.data_dir)
     dataset = preprocess(dataset, config.prompt.format, config.dataset)
     test_subset: Dataset = dataset["test"].shuffle(config.dataset.random_state).select(range(20))
-    client: Client = PersistentClient(config.path.chroma)
+    client: ClientAPI = PersistentClient(config.path.chroma)
     collection: Collection = get_collection(dataset["train"], client)
     
     # Loads, configures, and prompts the model

@@ -14,8 +14,8 @@ from omegaconf import DictConfig
 
 
 class Tags(StrEnum):
-    HEAD: str = "HEAD"
-    TAIL: str = "TAIL"
+    HEAD = "HEAD"
+    TAIL = "TAIL"
 
 
 def group_spans(document: dict) -> list[dict]:

@@ -9,7 +9,7 @@ Functions:
 
 import logging
 
-import chromadb
+from chromadb import ClientAPI, Collection
 from datasets import Dataset
 
 from .utils import get_metadata
@@ -19,7 +19,7 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 
 def add_documents(
-    collection: chromadb.Collection,
+    collection: Collection,
     dataset: Dataset,
     batch_size: int = 5461,
 ) -> None:
@@ -38,13 +38,13 @@ def add_documents(
     for idx in range(0, len(ids), batch_size):
         batch_end: int = idx + batch_size
         collection.upsert(
-            ids=ids[idx:batch_end],
+            ids=[str(id) for id in ids[idx:batch_end]],
             documents=documents[idx:batch_end],
             metadatas=metadata[idx:batch_end],
         )
 
 
-def get_collection(dataset: Dataset, client: chromadb.Client) -> chromadb.Collection:
+def get_collection(dataset: Dataset, client: ClientAPI) -> Collection:
     """
     Create collections for the dataset.
 
@@ -55,7 +55,7 @@ def get_collection(dataset: Dataset, client: chromadb.Client) -> chromadb.Collec
     Returns:
         The collection for the dataset.
     """
-    collection: chromadb.Collection = client.get_or_create_collection(name="ner")
+    collection: Collection = client.get_or_create_collection(name="ner")
     if not collection.count():
         logger.info(f"Adding {len(dataset)} documents to collection")
         add_documents(collection, dataset)

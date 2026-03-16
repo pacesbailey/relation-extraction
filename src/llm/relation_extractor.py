@@ -63,8 +63,12 @@ def configure_prompt(config: DictConfig, examples: QueryResult, document: dict) 
         description=config.dataset.label_types[document["relation"]]["description"],
     )
     prompt: str = f"{config.prompt.system} {task}"
-    for metadata in examples["metadatas"][0]:
-        prompt += config.prompt.example.format(input=metadata["input"], output=metadata["output"])
+    for metadatas in examples["metadatas"]:
+        for metadata in metadatas:
+            prompt += config.prompt.example.format(
+                input=metadata["input"],
+                output=metadata["output"],
+            )
 
     return prompt
 
