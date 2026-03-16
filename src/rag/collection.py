@@ -1,3 +1,12 @@
+"""
+Contains functions for creating and managing collections of documents for the
+relation extraction task.
+
+Functions:
+    add_documents: Adds documents to a collection.
+    get_collection: Retrieves or creates a collection for the dataset.
+"""
+
 import logging
 
 import chromadb

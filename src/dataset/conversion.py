@@ -1,7 +1,14 @@
-import re
+"""
+Contains functions for converting the dataset into a format suitable for the relation extraction task.
+
+Functions:
+    group_spans: Groups the spans of the head and tail entities in the document.
+    insert_entity_tags: Inserts the entity tags into the tokens.
+    label_document: Labels the document with the entity tags.
+"""
+
 from copy import deepcopy
 from enum import StrEnum
-from xml.etree.ElementTree import Element, fromstring
 
 from omegaconf import DictConfig
 

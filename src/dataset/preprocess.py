@@ -1,3 +1,13 @@
+"""
+Contains functions for preprocessing the dataset for the relation extraction task.
+
+Functions:
+    collate_documents: Collates documents from multiple splits of a dataset into a single list.
+    remove_extra_columns: Removes extra columns from a dataset.
+    remove_duplicates: Removes duplicates from a dataset.
+    preprocess: Preprocesses a dataset by collating documents, splitting into train and test sets, and removing extra columns.
+"""
+
 import logging
 
 import pandas as pd

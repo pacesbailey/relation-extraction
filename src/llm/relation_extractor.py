@@ -1,3 +1,14 @@
+"""
+Contains the relation extractor module for the relation extraction task.
+
+Classes:
+    ExtractRelation: The signature for the relation extractor.
+    RelationExtractor: The relation extractor module.
+
+Functions:
+    configure_prompt: Configures the prompt for the relation extraction task.
+"""
+
 import dspy
 from chromadb import QueryResult
 from omegaconf import DictConfig

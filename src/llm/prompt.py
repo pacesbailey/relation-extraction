@@ -1,3 +1,10 @@
+"""
+Contains functions for prompting the model for the relation extraction task.
+
+Functions:
+    prompt_model: Prompts the model for the relation extraction task.
+"""
+
 from chromadb import Collection, QueryResult
 from omegaconf import DictConfig
 
