@@ -2,5 +2,5 @@ defaults:
   - dataset: default
   - model: default
   - path: default
-  - prompt: relation
+  - prompt: entity_tag_ner_relation
   - rag: default

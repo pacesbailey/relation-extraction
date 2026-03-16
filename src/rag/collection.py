@@ -1,7 +1,12 @@
+import logging
+
 import chromadb
 from datasets import Dataset
 
 from .utils import get_metadata
+
+
+logger: logging.Logger = logging.getLogger(__name__)
 
 
 def add_documents(
@@ -43,6 +48,7 @@ def get_collection(dataset: Dataset, client: chromadb.Client) -> chromadb.Collec
     """
     collection: chromadb.Collection = client.get_or_create_collection(name="ner")
     if not collection.count():
+        logger.info(f"Adding {len(dataset)} documents to collection")
         add_documents(collection, dataset)
 
     return collection

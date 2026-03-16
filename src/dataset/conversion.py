@@ -81,7 +81,11 @@ def label_document(document: dict, format: DictConfig) -> dict[str, str]:
     input_tokens: list[str] = insert_entity_tags(document["token"], spans, format.input)
     output_tokens: list[str] = insert_entity_tags(document["token"], spans, format.output)
     
-    return {"input": " ".join(input_tokens), "output": " ".join(output_tokens)}
+    return {
+        "text": " ".join(document["token"]),
+        "input": " ".join(input_tokens),
+        "output": " ".join(output_tokens)
+    }
 
 
 if __name__ == "__main__":

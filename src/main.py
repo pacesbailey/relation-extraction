@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import dspy
@@ -13,6 +14,7 @@ from rag import get_collection
 
 
 root: Path = setup_root(__file__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 
 @hydra.main(config_path=str(root / "config"), config_name="config", version_base=None)
@@ -26,7 +28,7 @@ def main(config: DictConfig) -> None:
     # Loads, preprocesses, and creates collections for the dataset
     dataset: DatasetDict = load_dataset(config.dataset.path, data_dir=config.dataset.data_dir)
     dataset = preprocess(dataset, config.prompt.format, config.dataset)
-    test_subset: Dataset = dataset["test"].select(range(15)).shuffle(seed=42)
+    test_subset: Dataset = dataset["test"].shuffle(config.dataset.random_state).select(range(20))
     client: Client = PersistentClient(config.path.chroma)
     collection: Collection = get_collection(dataset["train"], client)
     
@@ -34,7 +36,7 @@ def main(config: DictConfig) -> None:
     lm: dspy.LM = dspy.LM(**config.model)
     dspy.configure(lm=lm)
     predictions: Dataset = test_subset.map(prompt_model, fn_kwargs={"collection": collection, "config": config})
-    predictions.to_json(Path(config.path.predictions) / "predictions.json")
+    predictions.to_json(config.path.predictions)
 
 
 if __name__ == "__main__":
