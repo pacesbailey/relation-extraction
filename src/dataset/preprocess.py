@@ -1,25 +1,12 @@
-"""Preprocessing module for the tacred dataset.
-
-This module contains functions for preprocessing the tacred dataset in
-preparation for the relation extraction task. The preprocessing pipeline
-includes the following steps:
-1. Collating documents from multiple splits of the dataset into a single list.
-2. Removing extra columns from the collated documents.
-3. Splitting the collated documents into train and test sets.
-4. Formatting the train and test sets into Dataset objects.
-5. Returning the preprocessed dataset as a DatasetDict.
-
-Example:
->>> dataset: DatasetDict = load_dataset("json", data_dir="data")
->>> preprocessed_dataset: DatasetDict = preprocess(dataset, config)
-"""
-
+import pandas as pd
 from datasets import Dataset, DatasetDict
 from omegaconf import DictConfig
 from sklearn.model_selection import train_test_split
 
+from .conversion import label_document
 
-def collate_documents(dataset: DatasetDict) -> list[dict]:
+
+def collate_documents(dataset: DatasetDict) -> Dataset:
     """
     Collates documents from multiple splits of a dataset into a single list.
 
@@ -27,14 +14,14 @@ def collate_documents(dataset: DatasetDict) -> list[dict]:
         dataset: A DatasetDict containing the dataset splits to collate.
 
     Returns:
-        A list of documents.
+        A Dataset containing the collated documents.
     """
-    collated_documents: list[dict] = []
-    for dataset_split in dataset.values():
-        for document in dataset_split:
-            collated_documents.append(document)
-
-    return collated_documents
+    documents: list[dict] = [
+        document for split in dataset.values()
+        for document in split.to_list()
+    ]
+    
+    return Dataset.from_list(documents)
 
 
 def remove_extra_columns(dataset: Dataset, columns: list[str]) -> Dataset:
@@ -54,32 +41,60 @@ def remove_extra_columns(dataset: Dataset, columns: list[str]) -> Dataset:
     return dataset.remove_columns(list(extra_columns))
 
 
-def preprocess(dataset: DatasetDict, config: DictConfig) -> DatasetDict:
+def remove_duplicates(dataset: Dataset) -> Dataset:
+    """
+    Removes duplicates from a dataset.
+
+    Args:
+        dataset: The dataset to remove duplicates from.
+
+    Returns:
+        The dataset with duplicates removed.
+    """
+    dataframe: pd.DataFrame = pd.DataFrame(dataset)
+    dataframe = dataframe.drop_duplicates(subset=["token"])
+
+    return Dataset.from_pandas(dataframe)
+
+
+def preprocess(
+    dataset: DatasetDict,
+    format: DictConfig,
+    dataset_config: DictConfig,
+) -> DatasetDict:
     """
     Preprocesses a dataset by collating documents, splitting into train and
     test sets, and removing extra columns.
 
     Args:
         dataset: The dataset to be preprocessed, containing multiple splits.
-        config: The configuration containing specifications for the
-            preprocessing pipeline.
+        column_names: The columns to keep in the dataset.
+        random_state: The random state to use for the train-test split.
+        format: The format to use for the labeled text.
 
     Returns:
         The preprocessed dataset, containing the train and test splits.
     """
-    collated_documents: list[dict] = collate_documents(dataset)
-    train_documents, test_documents = train_test_split(
-        collated_documents,
-        random_state=config.dataset.random_state
+    collated_dataset: Dataset = collate_documents(dataset)
+    unique_dataset: Dataset = remove_duplicates(collated_dataset)
+    trimmed_dataset: Dataset = remove_extra_columns(unique_dataset, dataset_config.columns)
+    text_dataset: Dataset = trimmed_dataset.map(
+        function=lambda x: {"text": " ".join(x["token"])},
+        desc="Joining tokens"
     )
-    formatted_dataset: dict[str, Dataset] = {}
-    for split_name, documents in zip(["train", "test"], [train_documents, test_documents]):
-        split_subset: Dataset = Dataset.from_list(documents)
-        split_subset = remove_extra_columns(split_subset, config.dataset.columns)
-        split_subset = split_subset.map(lambda x: {"text": " ".join(x["token"])})
-        formatted_dataset[split_name] = split_subset
+    train_documents, test_documents = train_test_split(
+        text_dataset.to_list(),
+        random_state=dataset_config.random_state,
+        stratify=list(text_dataset["relation"]),
+    )
+    train_dataset: Dataset = Dataset.from_list(train_documents)
+    test_dataset: Dataset = Dataset.from_list(test_documents)
+    datasets: dict[str, Dataset] = {
+        "train": train_dataset.map(label_document, fn_kwargs={"format": format}, desc="Labeling documents"),
+        "test": test_dataset.map(label_document, fn_kwargs={"format": format}, desc="Labeling documents")
+    }
 
-    return DatasetDict(formatted_dataset)
+    return DatasetDict(datasets)
 
 
 if __name__ == "__main__":

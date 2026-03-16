@@ -1,28 +1,36 @@
-import re
-
 import chromadb
-from datasets import Dataset, DatasetDict
+from datasets import Dataset
+
+from .utils import get_metadata
 
 
-type Combination = tuple[str, str, str]
-
-
-def clean_string(text: str, replacement: str = '_') -> str:
+def add_documents(
+    collection: chromadb.Collection,
+    dataset: Dataset,
+    batch_size: int = 5461,
+) -> None:
     """
-    Clean a string by replacing all non-alphanumeric characters with a
-    replacement character.
+    Adds documents to a collection based on a given relation, subj_type, and
+    obj_type.
 
     Args:
-        text: The string to clean.
-        replacement: The replacement character.
-
-    Returns:
-        The cleaned string.
+        collection: The collection to add documents to.
+        dataset: The dataset to add documents from.
+        batch_size: The number of documents to add in each batch.
     """
-    return re.sub(r'[^a-zA-Z0-9]', replacement, text)
+    ids: list[int] = list(dataset["id"])
+    documents: list[str] = list(dataset["text"])
+    metadata: list[dict] = [get_metadata(document) for document in dataset]
+    for idx in range(0, len(ids), batch_size):
+        batch_end: int = idx + batch_size
+        collection.upsert(
+            ids=ids[idx:batch_end],
+            documents=documents[idx:batch_end],
+            metadatas=metadata[idx:batch_end],
+        )
 
 
-def get_collections(dataset: DatasetDict, client: chromadb.Client) -> dict[Combination, chromadb.Collection]:
+def get_collection(dataset: Dataset, client: chromadb.Client) -> chromadb.Collection:
     """
     Create collections for the dataset.
 
@@ -31,27 +39,13 @@ def get_collections(dataset: DatasetDict, client: chromadb.Client) -> dict[Combi
         client: The chroma client to use.
 
     Returns:
-        A dictionary containing the collections by combination.
+        The collection for the dataset.
     """
-    # Filter the dataset for unique relation, subj_type, and obj_type combinations
-    collections: dict[Combination, chromadb.Collection] = {}
-    for relation in set(dataset["train"]["relation"]):
-        relation_subset: Dataset = dataset["train"].filter(lambda x: x["relation"] == relation)
-        for subj_type in set(relation_subset["subj_type"]):
-            subj_subset: Dataset = relation_subset.filter(lambda x: x["subj_type"] == subj_type)
-            for obj_type in set(subj_subset["obj_type"]):
-                obj_subset: Dataset = subj_subset.filter(lambda x: x["obj_type"] == obj_type)
-                combination: Combination = (relation, subj_type, obj_type)
-                cleaned_name: str = clean_string("-".join(combination))
-                collection: chromadb.Collection = client.get_or_create_collection(name=cleaned_name)
-                if collection.count() == 0:  # If the collection is empty, add the documents
-                    ids: list[int] = list(obj_subset["id"])
-                    docs: list[str] = list(obj_subset["text"])
-                    for idx in range(0, len(ids), (max := 5461)):
-                        collection.add(ids=ids[idx:idx+max], documents=docs[idx:idx+max])
-                collections[combination] = collection
+    collection: chromadb.Collection = client.get_or_create_collection(name="ner")
+    if not collection.count():
+        add_documents(collection, dataset)
 
-    return collections
+    return collection
 
 
 if __name__ == "__main__":

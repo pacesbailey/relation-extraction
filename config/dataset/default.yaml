@@ -11,4 +11,215 @@ columns:
   - subj_type
   - obj_type
   - stanford_ner
+no_relation_type: no_relation
+label_types:
+  no_relation:
+    label: no relation
+    description: the two entities are not related to each other
+  org:alternate_names:
+    label: organization alternate names
+    description: any name used to refer to an organization that is distinct from the official name, including former names, aliases, alternate spellings, acronyms, abbreviations, translations or transliterations of names, and any official designators such as stock ticker code or airline call sign
+    head_ner: ORGANIZATION
+    tail_ner: ORGANIZATION
+  org:city_of_headquarters:
+    label: organization city of headquarters
+    description: location of the headquarters of an organization at the city, town, or village level, the name of a city, town, or village
+    head_ner: ORGANIZATION
+    tail_ner: CITY|LOCATION
+  org:country_of_headquarters:
+    label: organization country of headquarters
+    description: countries in which the headquarters of an organization are located
+    head_ner: ORGANIZATION
+    tail_ner: COUNTRY|LOCATION
+  org:dissolved:
+    label: organization date dissolved
+    description: the date on which an organization was dissolved
+    head_ner: ORGANIZATION
+    tail_ner: DATE
+  org:founded:
+    label: organization date founded
+    description: the date on which an organization was founded
+    head_ner: ORGANIZATION
+    tail_ner: DATE
+  org:founded_by:
+    label: organization founded by
+    description: the person, organization, or geopolitical entity that founded an organization
+    head_ner: ORGANIZATION
+    tail_ner: PERSON
+  org:member_of:
+    label: organization member of
+    description: organizations or geopolitical entities of which the organization is a member itself
+    head_ner: ORGANIZATION
+    tail_ner: ORGANIZATION|STATE_OR_PROVINCE|LOCATION|COUNTRY
+  org:members:
+    label: organization members
+    description: organizations or geopolitical entities that are members of an organization
+    head_ner: ORGANIZATION
+    tail_ner: ORGANIZATION|COUNTRY
+  org:number_of_employees/members:
+    label: organization number of employees / members
+    description: the total number of people who are employed by or have membership in an organization
+    head_ner: ORGANIZATION
+    tail_ner: NUMBER
+  org:parents:
+    label: organization parents
+    description: organizations or geopolitical entities of which the organization is a subsidiary
+    head_ner: ORGANIZATION
+    tail_ner: ORGANIZATION|STATE_OR_PROVINCE|LOCATION|COUNTRY
+  org:political/religious_affiliation:
+    label: organization political / religious affiliation
+    description: ideological groups with which the organization is associated
+    head_ner: ORGANIZATION
+    tail_ner: RELIGION|IDEOLOGY
+  org:shareholders:
+    label: organization shareholders
+    description: any organization, person, or geopolitical entity that holds shares (majority or not) of the organization, including former shareholders
+    head_ner: ORGANIZATION
+    tail_ner: ORGANIZATION|PERSON
+  org:stateorprovince_of_headquarters:
+    label: organization state or province of headquarters
+    description: location of the headquarters of an organization at the state or province level, a state or province name
+    head_ner: ORGANIZATION
+    tail_ner: LOCATION|STATE_OR_PROVINCE|
+  org:subsidiaries:
+    label: organization subsidiaries
+    description: organizations that are subsidiaries of an organization. Subsidiaries are subsumed under the assigned organization, rather than being distinct entities
+    head_ner: ORGANIZATION
+    tail_ner: ORGANIZATION|LOCATION|COUNTRY
+  org:top_members/employees:
+    label: organization top members / employees
+    description: the persons in high-level, leading positions at an organization
+    head_ner: ORGANIZATION
+    tail_ner: PERSON
+  org:website:
+    label: organization website
+    description: an official top level URL for the organization’s website
+    head_ner: ORGANIZATION
+    tail_ner: URL
+  per:age:
+    label: person age
+    description: the reported age of a person
+    head_ner: PERSON
+    tail_ner: NUMBER|DURATION
+  per:alternate_names:
+    label: person alternate name
+    description: any name used to refer to a person that are distinct from their official name, including aliases, stage names, alternate transliterations, abbreviations, alternate spellings, nicknames, or birth names
+    head_ner: PERSON
+    tail_ner: PERSON
+  per:cause_of_death:
+    label: person cause of death
+    description: the explicit cause of death for a person
+    head_ner: PERSON
+    tail_ner: CAUSE_OF_DEATH
+  per:charges:
+    label: person charges
+    description: the charges or crimes (alleged or convicted) of a person
+    head_ner: PERSON
+    tail_ner: CRIMINAL_CHARGE
+  per:children:
+    label: person children
+    description: the children of a person, including adopted and step-children
+    head_ner: PERSON
+    tail_ner: PERSON
+  per:cities_of_residence:
+    label: person cities of residence
+    description: the geopolitical entities at the municipality level (city, town, or village) in which a person has lived, the names of cities, towns, or villages
+    head_ner: PERSON
+    tail_ner: CITY|LOCATION
+  per:city_of_birth:
+    label: person city of birth
+    description: the geopolitical entity at the municipality level (city, town, or village) in which a person was born, the name of a city, town, or village
+    head_ner: PERSON
+    tail_ner: CITY|LOCATION
+  per:city_of_death:
+    label: person city of death
+    description: the geopolitical entity at the municipality level (city, town, or village) in which a person died, the name of a city, town, or village
+    head_ner: PERSON
+    tail_ner: CITY|LOCATION
+  per:countries_of_residence:
+    label: person countries of residence
+    description: the countries in which a person has lived
+    head_ner: PERSON
+    tail_ner: COUNTRY|LOCATION|NATIONALITY
+  per:country_of_birth:
+    label: person country of birth
+    description: the country in which a person was born
+    head_ner: PERSON
+    tail_ner: COUNTRY|LOCATION|NATIONALITY
+  per:country_of_death:
+    label: person country of death
+    description: the country in which a person died
+    head_ner: PERSON
+    tail_ner: COUNTRY|LOCATION|NATIONALITY
+  per:date_of_birth:
+    label: person date of birth
+    description: the date on which a person was born
+    head_ner: PERSON
+    tail_ner: DATE
+  per:date_of_death:
+    label: person date of death
+    description: the date of a person’s death
+    head_ner: PERSON
+    tail_ner: DATE
+  per:employee_of:
+    label: person employee or member of
+    description: the organizations or geopolitical entities (governments) of which a person has been an employee or member
+    head_ner: PERSON
+    tail_ner: ORGANIZATION|LOCATION
+  per:origin:
+    label: person origin
+    description: the nationality and / or ethnicity of a person
+    head_ner: PERSON
+    tail_ner: NATIONALITY|LOCATION|COUNTRY
+  per:other_family:
+    label: person other family
+    description: family other than siblings, parents, children, and spouse (or former spouse) of a person, including brothers-in-law, sisters-in-law, grandparents, grandchildren, cousins, aunts, uncles, etc
+    head_ner: PERSON
+    tail_ner: PERSON
+  per:parents:
+    label: person parents
+    description: the parents of a person, including biological parents, step-parents and adoptive parents
+    head_ner: PERSON
+    tail_ner: PERSON
+  per:religion:
+    label: person religion
+    description: the religion to which a person belongs or has belonged
+    head_ner: PERSON
+    tail_ner: RELIGION
+  per:schools_attended:
+    label: person schools attended
+    description: any school (college, high school, university, etc.) that a person has attended
+    head_ner: PERSON
+    tail_ner: ORGANIZATION
+  per:siblings:
+    label: person siblings
+    description: the brothers and sisters of a person, including step-siblings and half-siblings
+    head_ner: PERSON
+    tail_ner: PERSON
+  per:spouse:
+    label: person spouse
+    description: the spouse(s) of a person
+    head_ner: PERSON
+    tail_ner: PERSON
+  per:stateorprovince_of_birth:
+    label: person state or province of birth
+    description: the geopolitical entity at state or province level in which a person was born, the name of a state or province
+    head_ner: PERSON
+    tail_ner: STATE_OR_PROVINCE
+  per:stateorprovince_of_death:
+    label: person state or province of death
+    description: the geopolitical entity at state or province level in which a person died, the name of a state or province
+    head_ner: PERSON
+    tail_ner: STATE_OR_PROVINCE|LOCATION
+  per:stateorprovinces_of_residence:
+    label: person state or provinces of residence
+    description: the geopolitical entities at state or province level in which a person has lived, the names of states or provinces
+    head_ner: PERSON
+    tail_ner: STATE_OR_PROVINCE|LOCATION
+  per:title:
+    label: per title
+    description: official or unofficial name(s) of the employment or membership positions that have been held by a person
+    head_ner: PERSON
+    tail_ner: TITLE
+name: "tacred"
 random_state: 42

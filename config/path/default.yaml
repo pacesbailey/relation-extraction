@@ -1,3 +1,4 @@
 root: ${oc.env:PROJECT_ROOT}
 data: ${path.root}/data
 chroma: ${path.root}/chroma
+predictions: ${path.root}/predictions

@@ -1,3 +1,6 @@
 defaults:
-  - path: default
   - dataset: default
+  - model: default
+  - path: default
+  - prompt: relation
+  - rag: default
