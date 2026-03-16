@@ -55,7 +55,7 @@ def configure_prompt(config: DictConfig, examples: QueryResult, document: dict) 
     for metadata in examples["metadatas"][0]:
         prompt += config.prompt.example.format(input=metadata["input"], output=metadata["output"])
 
-    return prompt + config.prompt.user.format(input=document["input"])
+    return prompt
 
 
 if __name__ == "__main__":

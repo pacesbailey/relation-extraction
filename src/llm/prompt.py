@@ -5,13 +5,13 @@ from .relation_extractor import RelationExtractor, configure_prompt
 from .utils import parse_labeled
 
 
-def prompt_model(config: DictConfig, document: dict, collection: Collection) -> dict:
+def prompt_model(document: dict, collection: Collection, config: DictConfig) -> dict:
     """Prompts the model with the document.
     
     Args:
-        config: The configuration for the model.
         document: The document to prompt the model with.
         collection: The collection to prompt the model with.
+        config: The configuration for the model.
 
     Returns:
         The entities predicted by the model.

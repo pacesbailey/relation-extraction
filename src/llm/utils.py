@@ -3,6 +3,9 @@ from enum import StrEnum
 from xml.etree.ElementTree import Element, fromstring
 
 
+TAG_PATTERN: str = r'(</?(?:HEAD|TAIL)(?:\s+ner="([^"]*)")?(?:\s+relation="([^"]*)")?\s*>)'
+
+
 class Tags(StrEnum):
     HEAD: str = "HEAD"
     TAIL: str = "TAIL"
@@ -35,6 +38,26 @@ def add_token_spans(text: str, entities: list[dict]) -> list[dict]:
     return entities
 
 
+def escape_xml_content(text: str) -> str:
+    """Escapes XML special characters in text content, preserving HEAD/TAIL tags.
+    
+    Args:
+        text: The text containing HEAD/TAIL tags and content to escape.
+
+    Returns:
+        The text with XML special characters escaped in content portions.
+    """
+    escaped_parts: list[str] = []
+    for part in re.split((pattern := r'(</?(?:HEAD|TAIL)[^>]*>)'), text):
+        if re.match(pattern, part):
+            escaped_parts.append(part)
+        else:
+            escaped: str = part.replace('&', '&amp;')
+            escaped_parts.append(escaped)
+    
+    return "".join(escaped_parts)
+
+
 def extract_xml_data(text: str) -> list[dict]:
     """Extracts the XML data from the text.
     
@@ -45,7 +68,8 @@ def extract_xml_data(text: str) -> list[dict]:
         A list of dictionaries containing the XML data.
     """
     # Extracts data from the XML tags
-    xml_body: str = f"<root>{re.sub(r"(\w+)='([^']*)'", r'\1="\2"', text)}</root>"
+    escaped_text: str = escape_xml_content(text)
+    xml_body: str = f"<root>{re.sub(r"(\w+)='([^']*)'", r'\1="\2"', escaped_text)}</root>"
     root: Element = fromstring(xml_body)
     
     # Organizes the extracted data
