@@ -9,6 +9,7 @@ from omegaconf import DictConfig
 from pyrootutils import setup_root
 
 from dataset import preprocess
+from evaluation import evaluate
 from llm import prompt_model
 from rag import get_collection
 
@@ -37,6 +38,8 @@ def main(config: DictConfig) -> None:
     dspy.configure(lm=lm)
     predictions: Dataset = test_subset.map(prompt_model, fn_kwargs={"collection": collection, "config": config})
     predictions.to_json(config.path.predictions)
+
+    evaluate(predictions, config.path.scores)
 
 
 if __name__ == "__main__":
