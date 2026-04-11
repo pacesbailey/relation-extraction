@@ -119,11 +119,15 @@ def format_entities(entities: list[dict]) -> dict:
             case _:
                 raise ValueError(f"Invalid entity tag: {entity['tag']}")
         
-    assert len(relations) == 1, "Expected 1 relation, got multiple"
-    output["pred_relation"] = relations.pop()
+    match len(relations):
+        case 0:
+            output["pred_relation"] = "no_relation"
+        case 1:
+            output["pred_relation"] = relations.pop()
+        case _:
+            raise ValueError(f"Expected 1 relation, got multiple: {relations}")
 
     return output
-
 
 def parse_labeled(text: str) -> dict:
     """Parses the labeled text and returns the entities.
