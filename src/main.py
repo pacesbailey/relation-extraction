@@ -36,12 +36,11 @@ def main(config: DictConfig) -> None:
     lm: dspy.LM = dspy.LM(**config.model)
     dspy.configure(lm=lm)
     subset: Dataset = dataset["test"].shuffle(config.dataset.random_state).select(range(10))
-    responses: Dataset = subset.map(
+    predictions: Dataset = subset.map(
         prompt_model,
         fn_kwargs={"collection": collection, "config": config},
         desc="Prompting model"
     )
-    predictions: Dataset = responses.map(parse_labeled, desc="Parsing model responses")
     predictions.to_json(config.path.predictions)
 
     evaluate(predictions, config.path.scores)
