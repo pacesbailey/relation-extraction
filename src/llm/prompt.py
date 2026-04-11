@@ -9,7 +9,6 @@ from chromadb import Collection, QueryResult
 from omegaconf import DictConfig
 
 from .relation_extractor import RelationExtractor, configure_prompt
-from .utils import parse_labeled
 
 
 def prompt_model(document: dict, collection: Collection, config: DictConfig) -> dict:
@@ -37,9 +36,8 @@ def prompt_model(document: dict, collection: Collection, config: DictConfig) -> 
     )
     prompt: str = configure_prompt(config, examples, document)
     extractor: RelationExtractor = RelationExtractor(prompt)
-    labeled_text: str = extractor(document["text"])
 
-    return parse_labeled(labeled_text)
+    return {"response": extractor(document["text"])}
 
 
 if __name__ == "__main__":

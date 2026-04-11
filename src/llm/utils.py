@@ -1,9 +1,9 @@
 import re
 from enum import StrEnum
-from xml.etree.ElementTree import Element, fromstring
 
 
-TAG_PATTERN: str = r'(</?(?:HEAD|TAIL)(?:\s+ner="([^"]*)")?(?:\s+relation="([^"]*)")?\s*>)'
+TAG_PATTERN: re.Pattern = re.compile(r"<(HEAD|TAIL)\s+ner=['\"]([^'\"]+)['\"]\s+relation=['\"]([^'\"]+)['\"]\s*>([\s\S]*?)</\1>", re.IGNORECASE)
+CLEAN_PATTERN: re.Pattern = re.compile(r"</?(HEAD|TAIL)[^>]*>", re.IGNORECASE)
 
 
 class Tags(StrEnum):
@@ -21,9 +21,7 @@ def add_token_spans(text: str, entities: list[dict]) -> list[dict]:
     Returns:
         A list of dictionaries containing the entities with the token spans added.
     """
-    # Gets the entity token spans
-    clean_text: str = re.sub(r"</?(HEAD|TAIL)[^>]*>", "", text).strip()
-    tokens: list[str] = clean_text.split()
+    tokens: list[str] = CLEAN_PATTERN.sub("", text).strip().split()
     search_start: int = 0
     for entity in entities:
         entity_tokens: list[str] = entity["text"].split()
@@ -38,61 +36,6 @@ def add_token_spans(text: str, entities: list[dict]) -> list[dict]:
     return entities
 
 
-def escape_xml_content(text: str) -> str:
-    """Escapes XML special characters in text content, preserving HEAD/TAIL tags.
-    
-    Args:
-        text: The text containing HEAD/TAIL tags and content to escape.
-
-    Returns:
-        The text with XML special characters escaped in content portions.
-    """
-    escaped_parts: list[str] = []
-    for part in re.split((pattern := r'(</?(?:HEAD|TAIL)[^>]*>)'), text):
-        if re.match(pattern, part):
-            escaped_parts.append(part)
-        else:
-            escaped: str = part.replace('&', '&amp;')
-            escaped_parts.append(escaped)
-    
-    return "".join(escaped_parts)
-
-
-def extract_xml_data(text: str) -> list[dict]:
-    """Extracts the XML data from the text.
-    
-    Args:
-        text: The text to extract the XML data from.
-
-    Returns:
-        A list of dictionaries containing the XML data.
-    """
-    # Extracts data from the XML tags
-    escaped_text: str = escape_xml_content(text)
-    xml_body: str = f"<root>{re.sub(r"(\w+)='([^']*)'", r'\1="\2"', escaped_text)}</root>"
-    root: Element = fromstring(xml_body)
-    
-    # Organizes the extracted data
-    entities: list[dict] = []
-    for element in root.iter():
-        if element.tag in {Tags.HEAD, Tags.TAIL}:
-            try:
-                entity_text: str = element.text.strip()
-            except AttributeError:
-                entity_text = ""
-            entity: dict = {
-                "tag": element.tag,
-                "relation": element.attrib.get("relation"),
-                "ner": element.attrib.get("ner"),
-                "text": entity_text,
-                "start_token": None,
-                "end_token": None,
-            }
-            entities.append(entity)
-
-    return entities
-
-
 def format_entities(entities: list[dict]) -> dict:
     """Formats the entities into a dictionary.
     
@@ -102,8 +45,12 @@ def format_entities(entities: list[dict]) -> dict:
     Returns:
         A dictionary containing the formatted entities.
     """
-    # Reformats the entities into a dictionary
     output: dict = {}
+    for tag in "obj", "subj":
+        output[f"pred_{tag}_type"] = "UNPARSED"
+        output[f"pred_{tag}_start"] = None
+        output[f"pred_{tag}_end"] = None
+
     relations: set[str] = set()
     for entity in entities:
         relations.add(entity["relation"])
@@ -118,7 +65,7 @@ def format_entities(entities: list[dict]) -> dict:
                 output["pred_obj_end"] = entity["end_token"]
             case _:
                 raise ValueError(f"Invalid entity tag: {entity['tag']}")
-        
+
     match len(relations):
         case 0:
             output["pred_relation"] = "no_relation"
@@ -126,19 +73,47 @@ def format_entities(entities: list[dict]) -> dict:
             output["pred_relation"] = relations.pop()
         case _:
             raise ValueError(f"Expected 1 relation, got multiple: {relations}")
-
+    
     return output
 
-def parse_labeled(text: str) -> dict:
+
+def parse_entities(text: str) -> list[dict]:
+    """Parses the entities from the text, yielding the head/tail tags, the NER
+    type, the relation type, and the entity text.
+    
+    Args:
+        text: The text to parse the entities from.
+    
+    Returns:
+        A list of dictionaries containing the entities.
+    """
+    entities: list[dict] = []
+    for labeled_entity in TAG_PATTERN.finditer(text):
+        tag, ner, relation, entity = labeled_entity.groups()
+        entity_tags: dict = {
+            "tag": tag,
+            "ner": ner,
+            "relation": relation,
+            "text": entity.strip(),
+            "start_token": None,
+            "end_token": None
+        }
+        entities.append(entity_tags)
+    
+    return entities
+
+
+def parse_labeled(document: dict) -> dict:
     """Parses the labeled text and returns the entities.
     
     Args:
-        text: The text to parse.
+        document: The document to parse.
 
     Returns:
         A list of dictionaries containing the entities.
     """
-    entities: list[dict] = extract_xml_data(text)
+    text: str = re.sub(r"\\/", "/", document["response"])
+    entities: list[dict] = parse_entities(text)
     entities = add_token_spans(text, entities)
 
     return format_entities(entities)

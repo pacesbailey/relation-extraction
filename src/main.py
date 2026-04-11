@@ -10,7 +10,7 @@ from pyrootutils import setup_root
 
 from dataset import preprocess
 from evaluation import evaluate
-from llm import prompt_model
+from llm import parse_labeled, prompt_model
 from rag import get_collection
 
 
@@ -35,7 +35,13 @@ def main(config: DictConfig) -> None:
     # Loads, configures, and prompts the model
     lm: dspy.LM = dspy.LM(**config.model)
     dspy.configure(lm=lm)
-    predictions: Dataset = dataset["test"].map(prompt_model, fn_kwargs={"collection": collection, "config": config})
+    subset: Dataset = dataset["test"].shuffle(config.dataset.random_state).select(range(10))
+    responses: Dataset = subset.map(
+        prompt_model,
+        fn_kwargs={"collection": collection, "config": config},
+        desc="Prompting model"
+    )
+    predictions: Dataset = responses.map(parse_labeled, desc="Parsing model responses")
     predictions.to_json(config.path.predictions)
 
     evaluate(predictions, config.path.scores)
