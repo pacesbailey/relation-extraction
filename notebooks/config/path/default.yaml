@@ -1,0 +1,6 @@
+root: ${oc.env:PROJECT_ROOT}
+data: ${path.root}/data
+chroma: ${path.root}/chroma
+run_dir: ${hydra:runtime.output_dir}
+predictions: ${path.run_dir}/predictions.jsonl
+scores: ${path.run_dir}/scores.json

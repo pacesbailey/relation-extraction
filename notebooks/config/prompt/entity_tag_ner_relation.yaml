@@ -1,0 +1,18 @@
+system: "You are an excellent linguist."
+task: "Within the ${dataset.name} dataset, the task is to label relations of type '{relation_type}' between two entities of type {head_type} and {tail_type}, where the relation '{relation_type}' is defined as '{description}'. If there is no relation, label it as '${dataset.no_relation_type}'. Below are some examples, and you should make the same prediction as the examples.\\n"
+example: "The given sentence: {input}\\nThe labeled sentence: {output}\\n"
+user: "The given sentence: {input}\\nThe labeled sentence: "
+
+formats:
+  no_markup: "{entity}"
+  html_tag: "<{tag}>{entity}</{tag}>"
+  html_tag_relation: "<{tag} relation='{relation}'>{entity}</{tag}>"
+  html_tag_ner: "<{tag} ner='{ner}'>{entity}</{tag}>"
+  html_tag_ner_relation: "<{tag} ner='{ner}' relation='{relation}'>{entity}</{tag}>"
+  html_tag_ner_role_relation: "<{tag} ner='{ner}' role='{role}' relation='{relation}'>{entity}</{tag}>"
+  html_tag_ner_merged_role_relation: "<{tag} ner='{ner}' relation='{relation}:{role}'>{entity}</{tag}>"
+
+format:
+  name: "ner-ner_relation"
+  input: ${prompt.formats.no_markup}
+  output: ${prompt.formats.html_tag_ner_relation}
