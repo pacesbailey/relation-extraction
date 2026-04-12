@@ -17,9 +17,9 @@ def group_classification_reports(dataset: Dataset) -> dict:
     """
     return {
         "subj_type": classification_report(dataset["subj_type"], dataset["pred_subj_type"], output_dict=True, zero_division=0),
-        "subj_spans": evaluate_spans(dataset, "SUBJ"),
+        "subj_spans": evaluate_spans(dataset, "subj"),
         "obj_type": classification_report(dataset["obj_type"], dataset["pred_obj_type"], output_dict=True, zero_division=0),
-        "obj_spans": evaluate_spans(dataset, "OBJ"),
+        "obj_spans": evaluate_spans(dataset, "obj"),
         "relation": classification_report(dataset["relation"], dataset["pred_relation"], output_dict=True, zero_division=0)
     }
 
@@ -49,25 +49,17 @@ def evaluate_spans(dataset: Dataset, prefix: str) -> dict:
     pred_bios: list[list[str]] = []
     for document in dataset:
         n_tokens: int = len(document["token"])
-        true_bio: list[str] = span_to_bio(
-            n_tokens=n_tokens,
-            start=document[f"{prefix.lower()}_start"],
-            end=document[f"{prefix.lower()}_end"],
-            prefix=prefix
-        )
-        pred_bio: list[str] = span_to_bio(
-            n_tokens=n_tokens,
-            start=document[f"pred_{prefix.lower()}_start"],
-            end=document[f"pred_{prefix.lower()}_end"],
-            prefix=prefix
-        )
+        start, end = document[f"{prefix}_start"], document[f"{prefix}_end"]
+        pred_start, pred_end = document[f"pred_{prefix}_start"], document[f"pred_{prefix}_end"]
+        true_bio: list[str] = span_to_bio(n_tokens, start, end, prefix)
+        pred_bio: list[str] = span_to_bio(n_tokens, pred_start, pred_end, prefix)
         true_bios.append(true_bio)
         pred_bios.append(pred_bio)
 
     return classification_report(
         y_true=list(chain.from_iterable(true_bios)),
         y_pred=list(chain.from_iterable(pred_bios)),
-        labels=[f"B-{prefix}", f"I-{prefix}"],
+        labels=[f"B-{prefix.upper()}", f"I-{prefix.upper()}"],
         output_dict=True,
         zero_division=0
     )
@@ -95,7 +87,7 @@ def save_evaluation(classification_reports: dict, path: Path) -> None:
             file.write("\n")
 
 
-def span_to_bio(n_tokens: int, start: int, end: int, prefix: str) -> list[str]:
+def span_to_bio(n_tokens: int, start: int | None, end: int | None, prefix: str) -> list[str]:
     """Converts a span to a BIO tag sequence.
     
     Args:
@@ -111,12 +103,25 @@ def span_to_bio(n_tokens: int, start: int, end: int, prefix: str) -> list[str]:
     if start is None or end is None:
         return tags
 
+    start, end = int(start), int(end)
     for i in range(start, end + 1):
-        tags[i] = f"I-{prefix}"
-    tags[start] = f"B-{prefix}"
+        try:
+            tags[i] = f"I-{prefix.upper()}"
+        except IndexError as e:
+            print(i, start, end, n_tokens)
+            raise e
+    tags[start] = f"B-{prefix.upper()}"
 
     return tags
 
 
 if __name__ == "__main__":
-    raise NotImplementedError
+    # raise NotImplementedError
+    from pathlib import Path
+
+    import pyrootutils
+    root: Path = pyrootutils.setup_root(__file__)
+    dataset: Dataset = Dataset.from_json(str(root / "outputs" / "2026-04-11" / "17-12-44" / "predictions.jsonl"))
+
+    classification_reports: dict = group_classification_reports(dataset)
+    report_evaluation(classification_reports)
