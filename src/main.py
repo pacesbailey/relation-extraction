@@ -35,7 +35,12 @@ def main(config: DictConfig) -> None:
     # Loads, configures, and prompts the model
     lm: dspy.LM = dspy.LM(**config.model)
     dspy.configure(lm=lm)
-    predictions: Dataset = dataset["test"].map(prompt_model, fn_kwargs={"collection": collection, "config": config})
+    subset: Dataset = dataset["test"].select(range(10))
+    predictions: Dataset = subset.map(
+        prompt_model,
+        fn_kwargs={"collection": collection, "config": config},
+        desc="Prompting model"
+    )
     predictions.to_json(config.path.predictions)
 
     evaluate(predictions, config.path.scores)

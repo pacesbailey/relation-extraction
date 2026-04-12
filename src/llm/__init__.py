@@ -6,5 +6,6 @@ Modules:
 """
 
 from .prompt import prompt_model
+from .utils import parse_labeled
 
-__all__ = ["prompt_model"]
+__all__ = ["parse_labeled", "prompt_model"]
